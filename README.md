@@ -7,7 +7,7 @@
 	<img src="https://travis-ci.com/EI-research-group/deep-ei.svg?token=XQEp1pndaPyr6Dp2sp6i&branch=master">
 	<img src="https://img.shields.io/badge/-SCIENCE!-blueviolet">
 	<!-- <img src="http://hits.dwyl.com/EI-research-group/deep-ei.svg"> -->
-	<p>This package accompanies the paper <b>"Examining the Causal Structure of Artificial Neural Networks Using Information Theory"</b> by Simon Mattsson, <a href="https://ericjmichaud.com">Eric J. Michaud</a>, and <a href="https://https://www.erikphoel.com/">Erik Hoel</a></p>
+	<p>This package accompanies the paper <b>"Examining the Causal Structure of Artificial Neural Networks Using Information Theory"</b> by Simon Mattsson, <a href="https://ericjmichaud.com">Eric J. Michaud</a>, and <a href="https://www.erikphoel.com/">Erik Hoel</a></p>
 </div>
 
 
