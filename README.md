@@ -1,14 +1,15 @@
 
 <div align="center">
+	<h1> deep-ei </h1>
   <img src="docs/causal-plane.png" width=40%>
 </div>
-<div align="center" markdown="1">
+<div align="center">
+	<img src="https://travis-ci.com/EI-research-group/deep-ei.svg?token=XQEp1pndaPyr6Dp2sp6i&branch=master">
 	<img src="https://img.shields.io/badge/-SCIENCE!-blueviolet">
 	<!-- <img src="http://hits.dwyl.com/EI-research-group/deep-ei.svg"> -->
+	<p>This package accompanies the paper <b>"Examining the Causal Structure of Artificial Neural Networks Using Information Theory"</b> by Simon Mattsson, <a href="ericjmichaud.com">Eric J. Michaud</a>, and <a href="https://www.erikphoel.com/">Erik Hoel</a></p>
 </div>
 
-
-This package provides tools for measuring the effective information in artificial neural networks built with PyTorch. 
 
 ## Installation:
 
@@ -25,7 +26,7 @@ conda env create --file environment.yml
 
 Since it is recommended that PyTorch be installed with Anaconda, for many it will be easiest to install pytorch first with `conda install -c pytorch pytorch`, and then execute `pip install .`, which will then install the other dependencies (scikit-learn, fast_histogram) and install the deep_ei module itself.
 
-Some very basic tests have been included, which you can run using:
+Some basic tests have been included, which you can run using:
 
 ```
 python setup.py test

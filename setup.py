@@ -9,7 +9,7 @@ setup(
     author='Simon Mattsson, Eric J. Michaud, Erik Hoel',
     author_email='eric.michaud99@gmail.com',
     license='MIT',
-    # url='https://github.com/ejmichaud/torch-foresight',
+    url='https://github.com/EI-research-group/deep-ei',
     description='Tools for measuring the effective information in artificial neural networks built with PyTorch',
     install_requires=[
         "torch",

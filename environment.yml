@@ -1,0 +1,15 @@
+name: deep-ei
+channels:
+  - pytorch
+  - defaults
+dependencies:
+  - python=3.6.9
+  - pip
+  - pytorch
+  - torchvision
+  - pytest
+  - networkx
+  - scikit-learn
+  - pip:
+    - fast-histogram
+    - .
