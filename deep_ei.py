@@ -1021,10 +1021,12 @@ def sensitivity_of_layer(layer, topology, samples=500, batch_size=20,
             high_tensor[:,A] = torch.full((1,), in_range[1], device = device)
             low_result = _eval_model(low_tensor.reshape((1,*in_shape)), in_layer, layer, topology, activation)
             high_result = _eval_model(high_tensor.reshape((1,*in_shape)), in_layer, layer, topology, activation)
-            min_A = torch.min(low_result).item()
-            max_A = torch.max(high_result).item()
-            mins.append(min_A)
-            maxs.append(max_A)
+            min_low = torch.min(low_result).item()
+            max_low = torch.max(low_result).item()
+            min_high = torch.min(high_result).item()
+            max_high = torch.max(high_result).item()
+            mins.append(min([min_low,min_high]))
+            maxs.append(max([max_low,max_high]))
         out_range = (min(mins), max(maxs))
     if out_bins == 'dynamic':
         bin_size = (in_range[1] - in_range[0]) / in_bins
