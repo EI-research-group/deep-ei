@@ -4,10 +4,11 @@
   <img src="docs/causal-plane.png" width=40%>
 </div>
 <div align="center">
+    <a href="https://badge.fury.io/py/deep-ei"><img src="https://badge.fury.io/py/deep-ei.svg" alt="PyPI version" height="18"></a>
 	<a href="https://travis-ci.com/EI-research-group/deep-ei"><img src="https://travis-ci.com/EI-research-group/deep-ei.svg?token=XQEp1pndaPyr6Dp2sp6i&branch=master"></a>
 	<a href="https://neuralnet.science"><img src="https://img.shields.io/badge/-SCIENCE!-blueviolet"></a>
 	<!-- <img src="http://hits.dwyl.com/EI-research-group/deep-ei.svg"> -->
-	<p>This package accompanies the paper <b>"Examining the Causal Structures of Artificial Neural Networks Using Information Theory"</b> by Simon Mattsson, <a href="https://ericjmichaud.com">Eric J. Michaud</a>, and <a href="https://www.erikphoel.com/">Erik Hoel</a></p>
+	<p>This code accompanies the paper <b>"Examining the Causal Structures of Artificial Neural Networks Using Information Theory"</b> by Simon Mattsson, <a href="https://ericjmichaud.com">Eric J. Michaud</a>, and <a href="https://www.erikphoel.com/">Erik Hoel</a></p>
 </div>
 
 ## What's here?
