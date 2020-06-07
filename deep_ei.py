@@ -793,7 +793,7 @@ def ei_of_layer_matrix(layer, topology, samples=None, batch_size=20,
     The EI of the connection ``A -> B`` is defined as:
     
     .. math::
-        EI(A \rightarrow B) = I(t_A, t_B) | do(L_1 = H^\max)
+        EI(A \rightarrow B) = I(t_A, t_B) | do(L_1 = H^{\max})
 
     where neuron A is in layer ``L_1``. This is the mutual information between A's
     activation and B's activation when all the other neurons in ``L_1`` are firing
