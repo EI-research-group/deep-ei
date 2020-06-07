@@ -107,34 +107,29 @@ CONVOLUTIONAL_MODULES = {
 
 
 def topology_of(model, input):
-    r"""Get a graph representing the connectivity of `model`.
-
-    Each node of the returned graph contains a dictionary:
-
-    {
-        "input": {"activation": activation module, "shape": tuple},
-        "output": {"activation": activation module, "shape": tuple}
-    }
+    r"""Get a graph representing the connectivity of ``model``.
 
     Because PyTorch uses a dynamic computation graph, the number of activations
     that a given module will return is not intrinsic to the definition of the module,
     but can depend on the shape of its input. We therefore need to pass data through
     the network to determine its connectivity. 
 
-    This function passes `input` into `model` and gets the shapes of the tensor 
+    This function passes ``input`` into ``model`` and gets the shapes of the tensor 
     inputs and outputs of each child module in model, provided that they are
-    instances of VALID_MODULES. It also finds the modules run before and after
-    each child module, provided they are in VALID_ACTIVATIONS. 
+    instances of ``VALID_MODULES``. It also finds the modules run before and after
+    each child module, provided they are in ``VALID_ACTIVATIONS``. 
 
     Args:
         model (nn.Module): feedforward neural network
         input (torch.tensor): a valid input to the network
 
     Returns:
-        networkx.DiGraph representing `model` connectivity
+        nx.DiGraph: representing connectivity of ``model``.
 
     Examples:
-        >>> network = nn.Sequential(nn.Linear(42, 20), nn.Sigmoid(), nn.Linear(20, 10))
+        >>> network = nn.Sequential(nn.Linear(42, 20), 
+                                    nn.Sigmoid(), 
+                                    nn.Linear(20, 10))
         >>> top = topology_of(network, input=torch.zeros((1, 42)))
         >>> layer1, _, layer2 = network
         >>> top.nodes[layer1]['output']['activation']
@@ -680,11 +675,16 @@ def ei_of_layer(layer, topology, threshold=0.05, samples=None, extrapolate=False
     in_layer=None, in_range=None, in_bins=64, \
     out_range=None, out_bins=64, 
     activation=None, device='cpu'):
-    """Computes the effective information of neural network layer `layer`.
+    r"""Computes the effective information of neural network layer ``layer``. By a "layer",
+    really mean the edges connecting two layers of neurons in the network. The cumulative
+    EI of these connections is defined:
+
+    .. math::
+        EI(L_1 \rightarrow L_2) = \sum_{(i \in L_1,j \in L_2)} I(t_i,t_j) \ | \ do(L_1=H^{\max}) 
 
     Args:
-        layer (nn.Module): a module in `topology`
-        topology (dict): topology object (nested dictionary) returned from topology_of function
+        layer (nn.Module): a module in ``topology``
+        topology (nx.DiGraph): topology object returned from topology_of function
         threshold (float): used to dynamically determine how many samples to use.
         samples (int): if specified (defaults to None), function will manually use this many samples, which may or may not give good convergence.
         extrapolate (bool): if True, then evaluate EI at several points and then fit a curve to determine asymptotic value.
@@ -698,7 +698,7 @@ def ei_of_layer(layer, topology, threshold=0.05, samples=None, extrapolate=False
         device: 'cpu' or 'cuda' or `torch.device` instance
 
     Returns:
-        float: an estimate of the EI of layer `layer`
+        float: an estimate of the EI of layer ``layer``
     """
     
     #################################################
@@ -779,12 +779,20 @@ def ei_of_layer_matrix(layer, topology, samples=None, batch_size=20,
     in_layer=None, in_range=None, in_bins=64, \
     out_range=None, out_bins=64, 
     activation=None, device='cpu'):
-    """Computes the effective information of all A -> B connections of 
-    neural network layer `layer`.
+    r"""Computes the effective information of all A`` -> B`` connections of 
+    neural network layer ``layer``.
+
+    The EI of the connection ``A -> B`` is defined as:
+    .. math::
+        EI(A -> B) = I(t_A, t_B) | do(L_1 = H^\max)
+
+    where neuron A is in layer ``L_1``. This is the mutual information between A's
+    activation and B's activation when all the other neurons in ``L_1`` are firing
+    randomly (independently and uniformly in their activation output range). 
 
     Args:
         layer (nn.Module): a module in `topology`
-        topology (dict): topology object (nested dictionary) returned from topology_of function
+        topology (nx.DiGraph): topology object returned from topology_of function
         threshold (float): used to dynamically determine how many samples to use.
         samples (int): if specified (defaults to None), function will manually use this many samples, which may or may not give good convergence.
         extrapolate (bool): if True, then evaluate EI at several points and then fit a curve to determine asymptotic value.
@@ -798,7 +806,7 @@ def ei_of_layer_matrix(layer, topology, samples=None, batch_size=20,
         device: 'cpu' or 'cuda' or `torch.device` instance
 
     Returns:
-        np.array: The [A][B]th element is the EI from A -> B
+        np.array: The [A][B]th element of this matrix is the EI from ``A -> B``
     """
     
     #################################################
@@ -952,7 +960,7 @@ def sensitivity_of_layer(layer, topology, samples=500, batch_size=20,
 
     Args:
         layer (nn.Module): a module in `topology`
-        topology (dict): topology object (nested dictionary) returned from topology_of function
+        topology (nx.DiGraph): topology object returned from topology_of function
         samples (int): the number of noise samples run through `layer`
         batch_size (int): the number of samples to run `layer` on simultaneously
         in_layer (nn.Module): the module in `topology` which begins our 'layer'. By default is the same as `layer`.
@@ -1077,7 +1085,7 @@ def sensitivity_of_layer_matrix(layer, topology, samples=500, batch_size=20,
 
     Args:
         layer (nn.Module): a module in `topology`
-        topology (dict): topology object (nested dictionary) returned from topology_of function
+        topology (nx.DiGraph): topology object returned from topology_of function
         samples (int): the number of noise samples run through `layer`
         batch_size (int): the number of samples to run `layer` on simultaneously
         in_layer (nn.Module): the module in `topology` which begins our 'layer'. By default is the same as `layer`.
