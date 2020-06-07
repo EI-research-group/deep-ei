@@ -126,6 +126,13 @@ def topology_of(model, input):
     Returns:
         nx.DiGraph: representing connectivity of ``model``.
 
+        Each node of the returned graph contains a dictionary::
+
+            {
+                "input": {"activation": activation module, "shape": tuple},
+                "output": {"activation": activation module, "shape": tuple}
+            }
+
     Examples:
         >>> network = nn.Sequential(nn.Linear(42, 20), 
                                     nn.Sigmoid(), 
@@ -229,9 +236,10 @@ def _indices_and_batch_sizes(samples, batch_size):
 
 
 def _eval_model(x, in_layer, layer, topology, activation):
-    """Passes input x through the network starting with `in_layer`
-    and ending with `layer`. `layer` is forced to use `activation`
-    as its activation function, overriding whatever is in `topology`."""
+    """Passes input x through the network starting with ``in_layer``
+    and ending with ``layer``. ``layer`` is forced to use ``activation``
+    as its activation function, overriding whatever is in ``topology``.
+    """
     if in_layer == layer:
         with torch.no_grad():
             if activation is None:
@@ -257,7 +265,7 @@ def _eval_model(x, in_layer, layer, topology, activation):
 def _EI_of_layer_manual_samples(layer, topology, samples, batch_size, \
     in_layer, in_shape, in_range, in_bins, \
     out_shape, out_range, out_bins, activation, device):
-    """Helper function for ei_of_layer that computes the EI of layer `layer`
+    """Helper function for ei_of_layer that computes the EI of layer ``layer``
     with a set number of samples."""
     in_l, in_u = in_range
     num_inputs = reduce(lambda x, y: x * y, in_shape)
@@ -378,7 +386,7 @@ def _EI_of_layer_manual_samples(layer, topology, samples, batch_size, \
 
 def _EI_of_layer_extrapolate(layer, topology, batch_size, in_layer, in_shape, in_range, in_bins,\
     out_shape, out_range, out_bins, activation, device):
-    """Helper function of ei_of_layer that computes the EI of layer `layer` by computing EI
+    """Helper function of ei_of_layer that computes the EI of layer ``layer`` by computing EI
     with several different sample sizes and fitting a curve."""
     INTERVAL = 100000
     POINTS = 20
@@ -531,7 +539,7 @@ def _EI_of_layer_extrapolate(layer, topology, batch_size, in_layer, in_shape, in
 
 def _EI_of_layer_auto_samples(layer, topology, batch_size, in_layer, in_shape, in_range, in_bins, \
     out_shape, out_range, out_bins, activation, device, threshold):
-    """Helper function of ei_of_layer that computes the EI of layer `layer`
+    """Helper function of ei_of_layer that computes the EI of layer ``layer``
     using enough samples to be within `threshold`% of the true value. 
     """
     MULTIPLIER = 2
@@ -684,18 +692,18 @@ def ei_of_layer(layer, topology, threshold=0.05, samples=None, extrapolate=False
 
     Args:
         layer (nn.Module): a module in ``topology``
-        topology (nx.DiGraph): topology object returned from topology_of function
+        topology (nx.DiGraph): topology object returned from ``topology_of`` function
         threshold (float): used to dynamically determine how many samples to use.
         samples (int): if specified (defaults to None), function will manually use this many samples, which may or may not give good convergence.
         extrapolate (bool): if True, then evaluate EI at several points and then fit a curve to determine asymptotic value.
         batch_size (int): the number of samples to run `layer` on simultaneously
-        in_layer (nn.Module): the module in `topology` which begins our 'layer'. By default is the same as `layer`.
-        in_range (tuple): (lower_bound, upper_bound), inclusive, by default determined from `topology`
+        in_layer (nn.Module): the module in ``topology`` which begins our 'layer'. By default is the same as `layer`.
+        in_range (tuple): (lower_bound, upper_bound), inclusive, by default determined from ``topology``
         in_bins (int): the number of bins to discretize in_range into for MI calculation
-        out_range (tuple): (lower_bound, upper_bound), inclusive, by default determined from `topology`
+        out_range (tuple): (lower_bound, upper_bound), inclusive, by default determined from ``topology``
         out_bins (int): the number of bins to discretize out_range into for MI calculation
-        activation (function): the output activation of `layer`, by defualt determined from `topology`
-        device: 'cpu' or 'cuda' or `torch.device` instance
+        activation (function): the output activation of ``layer``, by defualt determined from ``topology``
+        device: 'cpu' or 'cuda' or ``torch.device`` instance
 
     Returns:
         float: an estimate of the EI of layer ``layer``
@@ -779,10 +787,11 @@ def ei_of_layer_matrix(layer, topology, samples=None, batch_size=20,
     in_layer=None, in_range=None, in_bins=64, \
     out_range=None, out_bins=64, 
     activation=None, device='cpu'):
-    r"""Computes the effective information of all A`` -> B`` connections of 
+    r"""Computes the effective information of all ``A -> B`` connections of 
     neural network layer ``layer``.
 
     The EI of the connection ``A -> B`` is defined as:
+    
     .. math::
         EI(A -> B) = I(t_A, t_B) | do(L_1 = H^\max)
 
@@ -792,21 +801,21 @@ def ei_of_layer_matrix(layer, topology, samples=None, batch_size=20,
 
     Args:
         layer (nn.Module): a module in `topology`
-        topology (nx.DiGraph): topology object returned from topology_of function
+        topology (nx.DiGraph): topology object returned from ``topology_of`` function
         threshold (float): used to dynamically determine how many samples to use.
         samples (int): if specified (defaults to None), function will manually use this many samples, which may or may not give good convergence.
         extrapolate (bool): if True, then evaluate EI at several points and then fit a curve to determine asymptotic value.
-        batch_size (int): the number of samples to run `layer` on simultaneously
-        in_layer (nn.Module): the module in `topology` which begins our 'layer'. By default is the same as `layer`.
-        in_range (tuple): (lower_bound, upper_bound), inclusive, by default determined from `topology`
+        batch_size (int): the number of samples to run ``layer`` on simultaneously
+        in_layer (nn.Module): the module in ``topology`` which begins our 'layer'. By default is the same as `layer`.
+        in_range (tuple): (lower_bound, upper_bound), inclusive, by default determined from ``topology``
         in_bins (int): the number of bins to discretize in_range into for MI calculation
-        out_range (tuple): (lower_bound, upper_bound), inclusive, by default determined from `topology`
+        out_range (tuple): (lower_bound, upper_bound), inclusive, by default determined from ``topology``
         out_bins (int): the number of bins to discretize out_range into for MI calculation
-        activation (function): the output activation of `layer`, by defualt determined from `topology`
-        device: 'cpu' or 'cuda' or `torch.device` instance
+        activation (function): the output activation of ``layer``, by defualt determined from ``topology``
+        device: 'cpu' or 'cuda' or ``torch.device`` instance
 
     Returns:
-        np.array: The [A][B]th element of this matrix is the EI from ``A -> B``
+        np.array: A matrix whose[A][B]th element is the EI from ``A -> B``
     """
     
     #################################################
@@ -948,7 +957,7 @@ def ei_of_layer_matrix(layer, topology, samples=None, batch_size=20,
 
 def sensitivity_of_layer(layer, topology, samples=500, batch_size=20,
         in_layer=None, in_range=None, in_bins=64, out_range=None, out_bins=64, activation=None, device='cpu'):
-    """Computes the sensitivity of neural network layer `layer`.
+    r"""Computes the sensitivity of neural network layer `layer`.
 
     Note that this does not currently support dynamic ranging or binning. There is a
     good reason for this: because the inputs we run through the network in the
@@ -958,21 +967,24 @@ def sensitivity_of_layer(layer, topology, samples=500, batch_size=20,
     ranging and binning supported by the EI function should be used with
     great caution.
 
+    .. math::
+        Sensitivity(L_1 \rightarrow L_2) = \sum_{(A \in L_1, B \in L_2)} I(t_A, t_B) \ | \ do(A=H^{\max})
+
     Args:
-        layer (nn.Module): a module in `topology`
-        topology (nx.DiGraph): topology object returned from topology_of function
-        samples (int): the number of noise samples run through `layer`
-        batch_size (int): the number of samples to run `layer` on simultaneously
-        in_layer (nn.Module): the module in `topology` which begins our 'layer'. By default is the same as `layer`.
-        in_range (tuple): (lower_bound, upper_bound), inclusive, by default determined from `topology`
+        layer (nn.Module): a module in ``topology``
+        topology (nx.DiGraph): topology object returned from ``topology_of`` function
+        samples (int): the number of noise samples to run through ``layer``
+        batch_size (int): the number of samples to run ``layer`` on simultaneously
+        in_layer (nn.Module): the module in ``topology`` which begins our 'layer'. By default is the same as ``layer``.
+        in_range (tuple): (lower_bound, upper_bound), inclusive, by default determined from ``topology``
         in_bins (int): the number of bins to discretize in_range into for MI calculation
-        out_range (tuple): (lower_bound, upper_bound), inclusive, by default determined from `topology`
+        out_range (tuple): (lower_bound, upper_bound), inclusive, by default determined from ``topology``
         out_bins (int): the number of bins to discretize out_range into for MI calculation
-        activation (function): the output activation of `layer`, by defualt determined from `topology`
-        device: 'cpu' or 'cuda' or `torch.device` instance
+        activation (function): the output activation of ``layer``, by defualt determined from ``topology``
+        device: 'cpu' or 'cuda' or ``torch.device`` instance
 
     Returns:
-        float: an estimate of the sensitivity of layer `layer`
+        float: an estimate of the sensitivity of layer ``layer``
     """
     
     #################################################
@@ -1072,7 +1084,7 @@ def sensitivity_of_layer(layer, topology, samples=500, batch_size=20,
 
 def sensitivity_of_layer_matrix(layer, topology, samples=500, batch_size=20,
         in_layer=None, in_range=None, in_bins=64, out_range=None, out_bins=64, activation=None, device='cpu'):
-    """Computes the sensitivitites of each A -> B connection 
+    r"""Computes the sensitivitites of each A -> B connection 
     of neural network layer `layer`.
 
     Note that this does not currently support dynamic ranging or binning. There is a
@@ -1083,21 +1095,28 @@ def sensitivity_of_layer_matrix(layer, topology, samples=500, batch_size=20,
     ranging and binning supported by the EI function should be used with
     great caution.
 
+    .. math::
+        Sensitivity(A \rightarrow B) = I(t_A, t_B) \ | \ do(A=H^{\max})
+
+    where neuron A is in layer ``L_1``. This is the mutual information between A's
+    activation and B's activation when A is firing randomly (uniformly) and all the
+    other neurons in ``L_1`` are outputing 0 (not firing). 
+
     Args:
-        layer (nn.Module): a module in `topology`
-        topology (nx.DiGraph): topology object returned from topology_of function
-        samples (int): the number of noise samples run through `layer`
-        batch_size (int): the number of samples to run `layer` on simultaneously
-        in_layer (nn.Module): the module in `topology` which begins our 'layer'. By default is the same as `layer`.
-        in_range (tuple): (lower_bound, upper_bound), inclusive, by default determined from `topology`
+        layer (nn.Module): a module in ``topology``
+        topology (nx.DiGraph): topology object returned from ``topology_of`` function
+        samples (int): the number of noise samples run through ``layer``
+        batch_size (int): the number of samples to run ``layer`` on simultaneously
+        in_layer (nn.Module): the module in ``topology`` which begins our 'layer'. By default is the same as `layer`.
+        in_range (tuple): (lower_bound, upper_bound), inclusive, by default determined from ``topology``
         in_bins (int): the number of bins to discretize in_range into for MI calculation
-        out_range (tuple): (lower_bound, upper_bound), inclusive, by default determined from `topology`
+        out_range (tuple): (lower_bound, upper_bound), inclusive, by default determined from ``topology``
         out_bins (int): the number of bins to discretize out_range into for MI calculation
-        activation (function): the output activation of `layer`, by defualt determined from `topology`
-        device: 'cpu' or 'cuda' or `torch.device` instance
+        activation (function): the output activation of `layer`, by defualt determined from ``topology``
+        device: 'cpu' or 'cuda' or ``torch.device`` instance
 
     Returns:
-        float: an estimate of the sensitivity of layer `layer`
+        np.array: A matrix whose[A][B]th element is the sensitivity from ``A -> B``
     """
     
     #################################################
