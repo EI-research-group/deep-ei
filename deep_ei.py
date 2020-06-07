@@ -688,7 +688,7 @@ def ei_of_layer(layer, topology, threshold=0.05, samples=None, extrapolate=False
     EI of these connections is defined:
 
     .. math::
-        EI(L_1 \rightarrow L_2) = \sum_{(i \in L_1,j \in L_2)} I(t_i,t_j) \ | \ do(L_1=H^{\max}) 
+        EI(L_1 \rightarrow L_2) = \sum_{(A \in L_1,B \in L_2)} I(t_A,t_B) \ | \ do(L_1=H^{\max}) 
 
     Args:
         layer (nn.Module): a module in ``topology``
@@ -696,7 +696,7 @@ def ei_of_layer(layer, topology, threshold=0.05, samples=None, extrapolate=False
         threshold (float): used to dynamically determine how many samples to use.
         samples (int): if specified (defaults to None), function will manually use this many samples, which may or may not give good convergence.
         extrapolate (bool): if True, then evaluate EI at several points and then fit a curve to determine asymptotic value.
-        batch_size (int): the number of samples to run `layer` on simultaneously
+        batch_size (int): the number of samples to run ``layer`` on simultaneously
         in_layer (nn.Module): the module in ``topology`` which begins our 'layer'. By default is the same as `layer`.
         in_range (tuple): (lower_bound, upper_bound), inclusive, by default determined from ``topology``
         in_bins (int): the number of bins to discretize in_range into for MI calculation
@@ -793,7 +793,7 @@ def ei_of_layer_matrix(layer, topology, samples=None, batch_size=20,
     The EI of the connection ``A -> B`` is defined as:
     
     .. math::
-        EI(A -> B) = I(t_A, t_B) | do(L_1 = H^\max)
+        EI(A \rightarrow B) = I(t_A, t_B) | do(L_1 = H^\max)
 
     where neuron A is in layer ``L_1``. This is the mutual information between A's
     activation and B's activation when all the other neurons in ``L_1`` are firing
@@ -1112,7 +1112,7 @@ def sensitivity_of_layer_matrix(layer, topology, samples=500, batch_size=20,
         in_bins (int): the number of bins to discretize in_range into for MI calculation
         out_range (tuple): (lower_bound, upper_bound), inclusive, by default determined from ``topology``
         out_bins (int): the number of bins to discretize out_range into for MI calculation
-        activation (function): the output activation of `layer`, by defualt determined from ``topology``
+        activation (function): the output activation of ``layer``, by defualt determined from ``topology``
         device: 'cpu' or 'cuda' or ``torch.device`` instance
 
     Returns:
