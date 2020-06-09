@@ -13,7 +13,7 @@
 </div>
 
 ## What's here?
-This repository contains all the code used in the paper (notebooks for creating figures, experiment scripts, etc) in the `experiments` directory, but most importantly holds the open-source `deep-ei` module. We encourage people to install `deep-ei` and perform their own experiments on new datasets, neural network architectures, etc. There are so many experiments we'd like to do, but haven't had time to yet! If you'd like to contribute to code, just submit a pull request! (note that all the code is currently structured as a single module, but may eventually be restructured as a package if that makes sense). 
+This repository contains all the code used in the paper (notebooks for creating figures, experiment scripts, etc) in the `experiments` directory, but most importantly holds the open-source `deep-ei` module. We encourage people to install `deep-ei` and perform their own experiments on new datasets, neural network architectures, etc. There are so many experiments we'd like to do, but haven't had time to yet! If you'd like to contribute to the code, just submit a pull request! (note that all the code is currently structured as a single module, but may eventually be restructured as a package if that makes sense). 
 
 
 ## Installation:
