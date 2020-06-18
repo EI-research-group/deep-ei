@@ -3,6 +3,7 @@
 import warnings
 from math import log, log2, ceil
 from functools import reduce
+from collections import defaultdict
 
 import numpy as np
 from sklearn.metrics import mutual_info_score
@@ -1208,4 +1209,210 @@ def sensitivity_of_layer_matrix(layer, topology, samples=500, batch_size=20,
         inputs.fill_(0)
         outputs.fill_(0)
     return sensitivities
+
+
+def _elog(x):
+    # for entropy, 0 log 0 = 0. but we get an error for putting log 0
+    if x <= 0. or x >= 1.:
+        return 0
+    else:
+        return x * np.log2(x)
+
+def _entropy(d):
+    num_samples = sum(d.values())
+    probs = map(lambda z: float(z) / num_samples, d.values())
+    return -sum(map(_elog, probs))
+
+def _tuples1d(sample, r=(0, 1), bins=16):
+    l, h = r
+    sample = torch.floor((sample + l) / (h - l) * bins).to(torch.int32).cpu().numpy()
+    for k in range(sample.shape[0]):
+        yield tuple(sample[k])
+
+
+def _vector_ei_of_layer_manual_samples(layer, topology, samples, batch_size, \
+    in_layer, in_shape, in_range, in_bins, \
+    out_shape, out_range, out_bins, activation, device):
+    """Helper function for vector_ei_of_layer that computes the EI of layer ``layer``
+    with a set number of samples."""
+    in_l, in_u = in_range
+    num_inputs = reduce(lambda x, y: x * y, in_shape)
+    num_outputs = reduce(lambda x, y: x * y, out_shape)
+
+    histy = defaultdict(int)
+
+    for chunk_size in _chunk_sizes(samples, num_inputs, num_outputs, MEMORY_LIMIT):
+        #################################################
+        #   Create buffers for layer input and output   #
+        #################################################
+        outputs = torch.zeros((chunk_size, *out_shape), device=device)
+        #################################################
+        #           Evaluate module on noise            #
+        #################################################
+        for (i0, i1), bsize in _indices_and_batch_sizes(chunk_size, batch_size):
+            sample = (in_u - in_l) * torch.rand((bsize, *in_shape), device=device) + in_l
+            try:
+                result = _eval_model(sample, in_layer, layer, topology, activation)
+            except:
+                print(i0, i1, bsize, in_layer, layer, in_shape, out_shape)
+                raise
+            outputs[i0:i1] = result
+        outputs = torch.flatten(outputs, start_dim=1)
+        #################################################
+        #               Update Histogram                #
+        #################################################
+        for y in _tuples1d(outputs, r=out_range, bins=out_bins):
+            histy[y] += 1
+    return _entropy(histy)
+
+
+def _vector_ei_of_layer_auto_samples(layer, topology, batch_size, in_layer, in_shape, in_range, in_bins, \
+    out_shape, out_range, out_bins, activation, device, threshold):
+    """Helper function of vector_ei_of_layer that computes the EI of layer ``layer``
+    using enough samples until doubling increases EI by only ``threshold```% of what
+    it otherwise would have increased by had the distribution been uniform.
+    """
+    MULTIPLIER = 2
+    INTERVAL = 10000
+    SAMPLES_SO_FAR = INTERVAL
+    EIs = []
+
+    def has_converged(EIs):
+        if len(EIs) < 2:
+            return False
+        if abs(EIs[-1] - EIs[-2]) < np.log2(MULTIPLIER)*threshold:
+            return True
+    
+    in_l, in_u = in_range
+    num_inputs = reduce(lambda x, y: x * y, in_shape)
+    num_outputs = reduce(lambda x, y: x * y, out_shape)
+
+    histy = defaultdict(int)
+
+    while True:
+        for chunk_size in _chunk_sizes(INTERVAL, num_inputs, num_outputs, MEMORY_LIMIT):
+            #################################################
+            #   Create buffers for layer outputing          #
+            #################################################
+            outputs = torch.zeros((chunk_size, *out_shape), device=device)
+            #################################################
+            #           Evaluate module on noise            #
+            #################################################
+            for (i0, i1), bsize in _indices_and_batch_sizes(chunk_size, batch_size):
+                sample = (in_u - in_l) * torch.rand((bsize, *in_shape), device=device) + in_l
+                try:
+                    result = _eval_model(sample, in_layer, layer, topology, activation)
+                except:
+                    print(i0, i1, bsize, in_layer, layer, in_shape, out_shape)
+                    raise
+                outputs[i0:i1] = result
+            outputs = torch.flatten(outputs, start_dim=1)
+            #################################################
+            #               Update Histogram                #
+            #################################################
+            for y in _tuples1d(outputs, r=out_range, bins=out_bins):
+                histy[y] += 1
+        #################################################
+        #                Compute entropy                #
+        ################################################# 
+        EIs.append(_entropy(histy))
+        #################################################
+        #        Determine whether more samples         #
+        #        are needed and update how many         #
+        #################################################
+        if has_converged(EIs):
+            return EIs[-1]
+        INTERVAL = int(SAMPLES_SO_FAR * (MULTIPLIER - 1))
+        SAMPLES_SO_FAR += INTERVAL
+
+
+def vector_ei_of_layer(layer, topology, threshold=0.05, samples=None, batch_size=20, 
+    in_layer=None, in_range=None, in_bins=64, \
+    out_range=None, out_bins=64, 
+    activation=None, device='cpu'):
+    r"""Computes the vector effective information of neural network layer ``layer``. 
+    By a "layer", we mean the function defined by the composition of some specified sequence
+    of layers in the network:
+
+    .. math::
+        EI^{\text{int}}(L_1 \rightarrow L_2) = I(L_1; L_2) \ | \ do(L_1=H^{\max}) 
+
+    Args:
+        layer (nn.Module): a module in ``topology``
+        topology (nx.DiGraph): topology object returned from ``topology_of`` function
+        threshold (float): used to dynamically determine how many samples to use.
+        samples (int): if specified (defaults to None), function will manually use this many samples, which may or may not give good convergence.
+        batch_size (int): the number of samples to run ``layer`` on simultaneously
+        in_layer (nn.Module): the module in ``topology`` which begins our 'layer'. By default is the same as `layer`.
+        in_range (tuple): (lower_bound, upper_bound), inclusive. By default determined from ``topology``
+        in_bins (int): the number of bins to discretize in_range into for MI calculation
+        out_range (tuple): (lower_bound, upper_bound), inclusive, by default determined from ``topology``
+        out_bins (int): the number of bins to discretize out_range into for MI calculation
+        activation (function): the output activation of ``layer``, by defualt determined from ``topology``
+        device: 'cpu' or 'cuda' or ``torch.device`` instance
+
+    Returns:
+        float: an estimate of the vector-EI of layer ``layer``
+    """
+    
+    #################################################
+    #   Determine shapes, ranges, and activations   #
+    #################################################
+    if in_layer is None:
+        in_layer = layer
+    in_shape = topology.nodes[in_layer]["input"]["shape"][1:]
+    out_shape = topology.nodes[layer]["output"]["shape"][1:]
+    ##############################################
+    #   Conv -> Pooling layer is a special case  #
+    #   TODO: this is a hack that needs work.    #
+    ##############################################
+    # if type(layer) in POOLING_MODULES and type(in_layer) in CONVOLUTIONAL_MODULES:
+    #     # print(layer, in_layer)
+    #     out_shape = (in_layer.out_channels,1,1)
+    #     in_shape = in_shape[:-2] + tuple([x + layer.stride * y for x,y in zip(in_shape[-2:], in_layer.stride)])
+
+    # print(type(in_layer), type(layer), in_shape, out_shape)
+        
+    if in_range == 'dynamic':
+        raise ValueError("Input range cannot be dynamic, only output range can be.")
+    if in_range is None:
+        activation_type = type(topology.nodes[in_layer]["input"]["activation"])
+        in_range = VALID_ACTIVATIONS[activation_type]
+    if out_range is None:
+        activation_type = type(topology.nodes[layer]["output"]["activation"])
+        out_range = VALID_ACTIVATIONS[activation_type]
+
+    if activation is None:
+        activation = topology.nodes[layer]["output"]["activation"]
+        if activation is None:
+            activation = lambda x: x
+
+    #################################################
+    #             Call helper functions             #
+    #################################################
+    if samples is not None:
+        return _vector_ei_of_layer_manual_samples(layer=layer, topology=topology,
+            samples=samples, 
+            batch_size=batch_size,
+            in_layer=in_layer,
+            in_shape=in_shape,
+            in_range=in_range,
+            in_bins=in_bins,
+            out_shape=out_shape,
+            out_range=out_range,
+            out_bins=out_bins,
+            activation=activation,
+            device=device)
+    return _vector_ei_of_layer_auto_samples(layer=layer, topology=topology,
+                batch_size=batch_size,
+                in_shape=in_shape,
+                in_layer=in_layer,
+                in_range=in_range,
+                in_bins=in_bins,
+                out_shape=out_shape,
+                out_range=out_range,
+                out_bins=out_bins,
+                activation=activation,
+                device=device,
+                threshold=threshold)
 
