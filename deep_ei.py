@@ -1239,12 +1239,15 @@ def _vector_ei_of_layer_manual_samples(layer, topology, samples, batch_size, \
     num_inputs = reduce(lambda x, y: x * y, in_shape)
     num_outputs = reduce(lambda x, y: x * y, out_shape)
 
+    histx = defaultdict(int)
     histy = defaultdict(int)
+    histxy = defaultdict(int)
 
     for chunk_size in _chunk_sizes(samples, num_inputs, num_outputs, MEMORY_LIMIT):
         #################################################
         #   Create buffers for layer input and output   #
         #################################################
+        inputs = torch.zeros((chunk_size, *in_shape), device=device)
         outputs = torch.zeros((chunk_size, *out_shape), device=device)
         #################################################
         #           Evaluate module on noise            #
@@ -1256,14 +1259,18 @@ def _vector_ei_of_layer_manual_samples(layer, topology, samples, batch_size, \
             except:
                 print(i0, i1, bsize, in_layer, layer, in_shape, out_shape)
                 raise
+            inputs[i0:i1] = sample
             outputs[i0:i1] = result
+        inputs = torch.flatten(inputs, start_dim=1)
         outputs = torch.flatten(outputs, start_dim=1)
         #################################################
         #               Update Histogram                #
         #################################################
-        for y in _tuples1d(outputs, r=out_range, bins=out_bins):
+        for x, y in zip(_tuples1d(inputs, r=in_range, bins=in_bins), _tuples1d(outputs, r=out_range, bins=out_bins)):
+            histx[x] += 1
             histy[y] += 1
-    return _entropy(histy)
+            histxy[(x, y)] += 1
+    return _entropy(histx) + _entropy(histy) - _entropy(histxy)
 
 
 def _vector_ei_of_layer_auto_samples(layer, topology, batch_size, in_layer, in_shape, in_range, in_bins, \
@@ -1287,13 +1294,16 @@ def _vector_ei_of_layer_auto_samples(layer, topology, batch_size, in_layer, in_s
     num_inputs = reduce(lambda x, y: x * y, in_shape)
     num_outputs = reduce(lambda x, y: x * y, out_shape)
 
+    histx = defaultdict(int)
     histy = defaultdict(int)
+    histxy = defaultdict(int)
 
     while True:
         for chunk_size in _chunk_sizes(INTERVAL, num_inputs, num_outputs, MEMORY_LIMIT):
             #################################################
             #   Create buffers for layer outputing          #
             #################################################
+            inputs = torch.zeros((chunk_size, *in_shape), device=device)
             outputs = torch.zeros((chunk_size, *out_shape), device=device)
             #################################################
             #           Evaluate module on noise            #
@@ -1305,17 +1315,21 @@ def _vector_ei_of_layer_auto_samples(layer, topology, batch_size, in_layer, in_s
                 except:
                     print(i0, i1, bsize, in_layer, layer, in_shape, out_shape)
                     raise
+                inputs[i0:i1] = sample
                 outputs[i0:i1] = result
+            inputs = torch.flatten(inputs, start_dim=1)
             outputs = torch.flatten(outputs, start_dim=1)
             #################################################
             #               Update Histogram                #
             #################################################
-            for y in _tuples1d(outputs, r=out_range, bins=out_bins):
+            for x, y in zip(_tuples1d(inputs, r=in_range, bins=in_bins), _tuples1d(outputs, r=out_range, bins=out_bins)):
+                histx[x] += 1
                 histy[y] += 1
+                histxy[(x, y)] += 1
         #################################################
-        #                Compute entropy                #
+        #           Compute mutual information          #
         ################################################# 
-        EIs.append(_entropy(histy))
+        EIs.append(_entropy(histx) + _entropy(histy) - _entropy(histxy))
         #################################################
         #        Determine whether more samples         #
         #        are needed and update how many         #
