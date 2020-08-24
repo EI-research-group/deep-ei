@@ -1430,3 +1430,105 @@ def vector_ei_of_layer(layer, topology, threshold=0.05, samples=None, batch_size
                 device=device,
                 threshold=threshold)
 
+def _subset(tup, indices):
+    return tuple(tup[i] for i in indices)
+
+def eis_between_groups(layer, topology, groups, samples=None, batch_size=20, 
+    in_layer=None, in_range=None, in_bins=64, \
+    out_range=None, out_bins=64, 
+    activation=None, device='cpu'):
+    r"""Computes the vector effective information of neural network layer ``layer``. 
+    By a "layer", we mean the function defined by the composition of some specified sequence
+    of layers in the network:
+
+    .. math::
+        EI^{\text{int}}(L_1 \rightarrow L_2) = I(L_1; L_2) \ | \ do(L_1=H^{\max}) 
+
+    Args:
+        layer (nn.Module): a module in ``topology``
+        topology (nx.DiGraph): topology object returned from ``topology_of`` function
+        samples (int): use this many samples, which may or may not give good convergence.
+        groups (list): list of tuples of tuples. For instance: [((1, 2, 3), (1, ))] will compute vector-EI between neurons 1, 2, and three in the in-layer (as a group) and neuron 1 in the out layer.
+        batch_size (int): the number of samples to run ``layer`` on simultaneously
+        in_layer (nn.Module): the module in ``topology`` which begins our 'layer'. By default is the same as `layer`.
+        in_range (tuple): (lower_bound, upper_bound), inclusive. By default determined from ``topology``
+        in_bins (int): the number of bins to discretize in_range into for MI calculation
+        out_range (tuple): (lower_bound, upper_bound), inclusive, by default determined from ``topology``
+        out_bins (int): the number of bins to discretize out_range into for MI calculation
+        activation (function): the output activation of ``layer``, by defualt determined from ``topology``
+        device: 'cpu' or 'cuda' or ``torch.device`` instance
+
+    Returns:
+        float: an estimate of the vector-EI of layer ``layer``
+    """
+
+    #################################################
+    #   Determine shapes, ranges, and activations   #
+    #################################################
+    if in_layer is None:
+        in_layer = layer
+    in_shape = topology.nodes[in_layer]["input"]["shape"][1:]
+    out_shape = topology.nodes[layer]["output"]["shape"][1:]
+
+    if in_range is None:
+        activation_type = type(topology.nodes[in_layer]["input"]["activation"])
+        in_range = VALID_ACTIVATIONS[activation_type]
+    if out_range is None:
+        activation_type = type(topology.nodes[layer]["output"]["activation"])
+        out_range = VALID_ACTIVATIONS[activation_type]
+
+    if activation is None:
+        activation = topology.nodes[layer]["output"]["activation"]
+        if activation is None:
+            activation = lambda x: x
+
+    in_l, in_u = in_range
+    num_inputs = reduce(lambda x, y: x * y, in_shape)
+    num_outputs = reduce(lambda x, y: x * y, out_shape)
+
+    histograms = {
+        group: {
+            'histx': defaultdict(int),
+            'histy': defaultdict(int),
+            'histxy': defaultdict(int),
+        } for group in groups
+    }
+
+    for chunk_size in _chunk_sizes(samples, num_inputs, num_outputs, MEMORY_LIMIT):
+        #################################################
+        #   Create buffers for layer input and output   #
+        #################################################
+        inputs = torch.zeros((chunk_size, *in_shape), device=device)
+        outputs = torch.zeros((chunk_size, *out_shape), device=device)
+        #################################################
+        #           Evaluate module on noise            #
+        #################################################
+        for (i0, i1), bsize in _indices_and_batch_sizes(chunk_size, batch_size):
+            sample = (in_u - in_l) * torch.rand((bsize, *in_shape), device=device) + in_l
+            try:
+                result = _eval_model(sample, in_layer, layer, topology, activation)
+            except:
+                print(i0, i1, bsize, in_layer, layer, in_shape, out_shape)
+                raise
+            inputs[i0:i1] = sample
+            outputs[i0:i1] = result
+        inputs = torch.flatten(inputs, start_dim=1)
+        outputs = torch.flatten(outputs, start_dim=1)
+        #################################################
+        #               Update Histogram                #
+        #################################################
+        for x, y in zip(_tuples1d(inputs, r=in_range, bins=in_bins), _tuples1d(outputs, r=out_range, bins=out_bins)):
+            for group in groups:
+                x_subset = _subset(x, group[0])
+                y_subset = _subset(y, group[1])
+                histograms[group]['histx'][x_subset] += 1
+                histograms[group]['histy'][y_subset] += 1
+                histograms[group]['histxy'][(x_subset, y_subset)] += 1
+    eis = [
+        _entropy(histograms[group]['histx']) + _entropy(histograms[group]['histy']) - _entropy(histograms[group]['histxy']) \
+            for group in groups
+    ]
+    return eis
+
+
+
