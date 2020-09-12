@@ -1224,8 +1224,12 @@ def _entropy(d):
     return -sum(map(_elog, probs))
 
 def _tuples1d(sample, r=(0, 1), bins=16):
+    """Converts a 2-d tensor of row-vectors into tuples of integers in [0, ... bins).
+
+    The division by slightly more than the true activation range fixes a problem  with 
+    functions like the sigmoid rounding up to precisely 1.0"""
     l, h = r
-    sample = torch.floor((sample + l) / (h - l) * bins).to(torch.int32).cpu().numpy()
+    sample = torch.floor((sample - l) / (h - l + 0.0001) * bins).to(torch.int32).cpu().numpy()
     for k in range(sample.shape[0]):
         yield tuple(sample[k])
 
@@ -1267,9 +1271,10 @@ def _vector_ei_of_layer_manual_samples(layer, topology, samples, batch_size, \
         #               Update Histogram                #
         #################################################
         for x, y in zip(_tuples1d(inputs, r=in_range, bins=in_bins), _tuples1d(outputs, r=out_range, bins=out_bins)):
-            histx[x] += 1
-            histy[y] += 1
-            histxy[(x, y)] += 1
+            if all(b < in_bins for b in x) and all(b < out_bins for b in y):
+                histx[x] += 1
+                histy[y] += 1
+                histxy[(x, y)] += 1
     return _entropy(histx) + _entropy(histy) - _entropy(histxy)
 
 
@@ -1323,9 +1328,10 @@ def _vector_ei_of_layer_auto_samples(layer, topology, batch_size, in_layer, in_s
             #               Update Histogram                #
             #################################################
             for x, y in zip(_tuples1d(inputs, r=in_range, bins=in_bins), _tuples1d(outputs, r=out_range, bins=out_bins)):
-                histx[x] += 1
-                histy[y] += 1
-                histxy[(x, y)] += 1
+                if all(b < in_bins for b in x) and all(b < out_bins for b in y): 
+                    histx[x] += 1
+                    histy[y] += 1
+                    histxy[(x, y)] += 1
         #################################################
         #           Compute mutual information          #
         ################################################# 
@@ -1518,12 +1524,13 @@ def eis_between_groups(layer, topology, groups, samples=None, batch_size=20,
         #               Update Histogram                #
         #################################################
         for x, y in zip(_tuples1d(inputs, r=in_range, bins=in_bins), _tuples1d(outputs, r=out_range, bins=out_bins)):
-            for group in groups:
-                x_subset = _subset(x, group[0])
-                y_subset = _subset(y, group[1])
-                histograms[group]['histx'][x_subset] += 1
-                histograms[group]['histy'][y_subset] += 1
-                histograms[group]['histxy'][(x_subset, y_subset)] += 1
+            if all(b < in_bins for b in x) and all(b < out_bins for b in y):
+                for group in groups:
+                    x_subset = _subset(x, group[0])
+                    y_subset = _subset(y, group[1])
+                    histograms[group]['histx'][x_subset] += 1
+                    histograms[group]['histy'][y_subset] += 1
+                    histograms[group]['histxy'][(x_subset, y_subset)] += 1
     eis = [
         _entropy(histograms[group]['histx']) + _entropy(histograms[group]['histy']) - _entropy(histograms[group]['histxy']) \
             for group in groups

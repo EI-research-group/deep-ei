@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='deep-ei',
-    version='0.6.2',
+    version='0.6.3',
     py_modules=['deep_ei'],
     author='Simon Mattsson, Eric J. Michaud, Erik Hoel',
     author_email='eric.michaud99@gmail.com',
