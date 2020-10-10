@@ -1538,4 +1538,84 @@ def eis_between_groups(layer, topology, groups, samples=None, batch_size=20,
     return eis
 
 
+def vector_and_pairwise_ei(layer, topology, samples=None, batch_size=20, 
+    in_layer=None, in_range=None, in_bins=64, \
+    out_range=None, out_bins=64, 
+    activation=None, device='cpu'):
+    """Returns (vector_ei, pairwise_ei), both computed with the same `samples`.
+    """
+    #################################################
+    #   Determine shapes, ranges, and activations   #
+    #################################################
+    if in_layer is None:
+        in_layer = layer
+    in_shape = topology.nodes[in_layer]["input"]["shape"][1:]
+    out_shape = topology.nodes[layer]["output"]["shape"][1:]
+
+    if in_range is None:
+        activation_type = type(topology.nodes[in_layer]["input"]["activation"])
+        in_range = VALID_ACTIVATIONS[activation_type]
+    if out_range is None:
+        activation_type = type(topology.nodes[layer]["output"]["activation"])
+        out_range = VALID_ACTIVATIONS[activation_type]
+
+    if activation is None:
+        activation = topology.nodes[layer]["output"]["activation"]
+        if activation is None:
+            activation = lambda x: x
+
+    in_l, in_u = in_range
+    num_inputs = reduce(lambda x, y: x * y, in_shape)
+    num_outputs = reduce(lambda x, y: x * y, out_shape)
+    in_bin_width = (in_u - in_l) / in_bins
+
+    histx = defaultdict(int)
+    histy = defaultdict(int)
+    histxy = defaultdict(int)
+    CMs = np.zeros((num_inputs, num_outputs, in_bins, out_bins)) # histograms for each input/output pair
+
+    for chunk_size in _chunk_sizes(samples, num_inputs, num_outputs, MEMORY_LIMIT):
+        #################################################
+        #   Create buffers for layer input and output   #
+        #################################################
+        inputs = torch.zeros((chunk_size, *in_shape), device=device)
+        outputs = torch.zeros((chunk_size, *out_shape), device=device)
+        #################################################
+        #           Evaluate module on noise            #
+        #################################################
+        for (i0, i1), bsize in _indices_and_batch_sizes(chunk_size, batch_size):
+            sample = (in_u - in_l) * torch.rand((bsize, *in_shape), device=device) + in_l
+            try:
+                result = _eval_model(sample, in_layer, layer, topology, activation)
+            except:
+                print(i0, i1, bsize, in_layer, layer, in_shape, out_shape)
+                raise
+            inputs[i0:i1] = sample
+            outputs[i0:i1] = result
+        inputs = torch.flatten(inputs, start_dim=1)
+        outputs = torch.flatten(outputs, start_dim=1)
+        #################################################
+        #               Update Histogram                #
+        #################################################
+        for x, y in zip(_tuples1d(inputs, r=in_range, bins=in_bins), _tuples1d(outputs, r=out_range, bins=out_bins)):
+            if all(b < in_bins for b in x) and all(b < out_bins for b in y):
+                histx[x] += 1
+                histy[y] += 1
+                histxy[(x, y)] += 1
+        for A in range(num_inputs):
+            for B in range(num_outputs):
+                CMs[A][B] += histogram2d(inputs[:, A].to('cpu').detach().numpy(),
+                                            outputs[:, B].to('cpu').detach().numpy(),
+                                            bins=(in_bins, out_bins),
+                                            range=hack_range((in_range, out_range)))
+    vector_ei = _entropy(histx) + _entropy(histy) - _entropy(histxy)
+    pairwise_ei = 0
+    for A in range(num_inputs):
+        for B in range(num_outputs):
+            A_B_EI = nats_to_bits(mutual_info_score(None, None, contingency=CMs[A][B]))
+            pairwise_ei += A_B_EI
+    return vector_ei, pairwise_ei
+
+
+
 
