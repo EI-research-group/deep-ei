@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from deep_ei import topology_of, vector_ei_of_layer
+from deep_ei import topology_of, ei
 
 
 def test_ei_0():
@@ -22,7 +22,7 @@ def test_ei_0():
     for in_w, out_w in product([1, 5, 10, 20], [1, 5, 10, 20]):
         layer = nn.Linear(in_w, out_w, bias=False).to(device)
         top = topology_of(layer, input=torch.zeros((1, in_w)).to(device))
-        ei = vector_ei_of_layer(layer, top,
+        ei_ = ei(layer, top,
                 samples=1000,
                 in_range=(0, 1),
                 out_range=(0, 1),
@@ -30,7 +30,7 @@ def test_ei_0():
                 out_bins=64,
                 activation=nn.Sigmoid(),
                 device=device)
-        assert ei > -1e-15
+        assert ei_ > -1e-15
 
 def test_ei_1():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -42,7 +42,7 @@ def test_ei_1():
     layer = nn.Linear(1, 1, bias=False).to(device)
     top = topology_of(layer, input=torch.zeros((1, 1)).to(device))
     layer.weight[0, 0] = 1.0
-    ei = vector_ei_of_layer(layer, top,
+    ei_ = ei(layer, top,
             samples=1000,
             batch_size=1000,
             in_range=(0, 1),
@@ -51,7 +51,7 @@ def test_ei_1():
             out_bins=16,
             activation=lambda x: x,
             device=device)
-    assert ei < 5 and ei > 3
+    assert ei_ < 5 and ei_ > 3
 
 def test_ei_2():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -66,7 +66,7 @@ def test_ei_2():
     layer.weight[0, 1] = 0.0
     layer.weight[1, 0] = 0.0
     layer.weight[1, 1] = 1.0
-    ei = vector_ei_of_layer(layer, top,
+    ei_ = ei(layer, top,
             samples=5000,
             batch_size=5000,
             in_range=(0, 1),
@@ -75,7 +75,7 @@ def test_ei_2():
             out_bins=16,
             activation=lambda x: x,
             device=device)
-    assert ei < 10 and ei > 6
+    assert ei_ < 10 and ei_ > 6
 
 def test_ei_3():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -89,7 +89,7 @@ def test_ei_3():
     nn.init.zeros_(layer.weight)
     layer.weight[0, 0] = 1.0
     layer.weight[1, 1] = 1.0
-    ei = vector_ei_of_layer(layer, top,
+    ei_ = ei(layer, top,
             threshold=0.05,
             batch_size=1000,
             in_range=(0, 1),
@@ -98,7 +98,7 @@ def test_ei_3():
             out_bins=32,
             activation=lambda x: x,
             device=device)
-    assert ei < 11 and ei > 9
+    assert ei_ < 11 and ei_ > 9
 
 
 def test_ei_4():
@@ -114,7 +114,7 @@ def test_ei_4():
     layer.weight[0, 0] = 1.0
     layer.weight[1, 1] = 1.0
     layer.weight[2, 2] = 1.0
-    ei = vector_ei_of_layer(layer, top,
+    ei_ = ei(layer, top,
             threshold=0.05,
             batch_size=1000,
             in_range=(0, 1),
@@ -123,7 +123,7 @@ def test_ei_4():
             out_bins=32,
             activation=lambda x: x,
             device=device)
-    assert ei < 16 and ei > 14
+    assert ei_ < 16 and ei_ > 14
 
 
 def test_ei_5():
@@ -139,7 +139,7 @@ def test_ei_5():
         nn.init.zeros_(layer.weight)
         layer.weight[0, 0] = 1.0
         layer.weight[1, 1] = 1.0
-        ei = vector_ei_of_layer(layer, top,
+        ei_ = ei(layer, top,
                 threshold=0.05,
                 batch_size=1000,
                 in_range=(0, 1),
@@ -148,7 +148,7 @@ def test_ei_5():
                 out_bins=16,
                 activation=lambda x: x,
                 device=device)
-        assert ei < (4*2 + 0.5) and ei > (4*2 - 0.5)
+        assert ei_ < (4*2 + 0.5) and ei_ > (4*2 - 0.5)
 
 def test_ei_6():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -164,7 +164,7 @@ def test_ei_6():
         layer.weight[0, 0] = 1.0
         layer.weight[1, 1] = 1.0
         layer.weight[2, 2] = 1.0
-        ei = vector_ei_of_layer(layer, top,
+        ei_ = ei(layer, top,
                 threshold=0.05,
                 batch_size=1000,
                 in_range=(0, 1),
@@ -173,7 +173,7 @@ def test_ei_6():
                 out_bins=16,
                 activation=lambda x: x,
                 device=device)
-        assert ei < (4*3 + 0.5) and ei > (4*3 - 0.5)
+        assert ei_ < (4*3 + 0.5) and ei_ > (4*3 - 0.5)
 
 
 def test_ei_7():
@@ -190,7 +190,7 @@ def test_ei_7():
         layer.weight[0, 0] = 1.0
         layer.weight[3, 3] = 1.0
         layer.weight[7, 7] = 1.0
-        ei = vector_ei_of_layer(layer, top,
+        ei_ = ei(layer, top,
                 threshold=0.05,
                 batch_size=1000,
                 in_range=(0, 1),
@@ -199,7 +199,7 @@ def test_ei_7():
                 out_bins=16,
                 activation=lambda x: x,
                 device=device)
-        assert ei < (4*3 + 0.5) and ei > (4*3 - 0.5)
+        assert ei_ < (4*3 + 0.5) and ei_ > (4*3 - 0.5)
 
 
 def test_ei_8():
@@ -213,7 +213,7 @@ def test_ei_8():
         layer = nn.Linear(n, n, bias=False).to(device)
         top = topology_of(layer, input=torch.zeros((1, n)).to(device))
         nn.init.zeros_(layer.weight)
-        ei = vector_ei_of_layer(layer, top,
+        ei_ = ei(layer, top,
                 threshold=0.05,
                 batch_size=1000,
                 in_range=(0, 1),
@@ -222,7 +222,7 @@ def test_ei_8():
                 out_bins=16,
                 activation=nn.Sigmoid(),
                 device=device)
-        assert ei < 0.1 and ei > -0.1
+        assert ei_ < 0.1 and ei_ > -0.1
 
 
 def test_ei_9():
@@ -238,7 +238,7 @@ def test_ei_9():
         nn.init.zeros_(layer.weight)
         for k in range(n):
             layer.weight[k, k] = 1.0
-        ei = vector_ei_of_layer(layer, top,
+        ei_ = ei(layer, top,
                 threshold=0.05,
                 batch_size=1000,
                 in_range=(0, 1),
@@ -247,5 +247,5 @@ def test_ei_9():
                 out_bins=16,
                 activation=lambda x: x,
                 device=device)
-        assert ei < (4*n + 1) and ei > (4*n - 1)
+        assert ei_ < (4*n + 1) and ei_ > (4*n - 1)
 

@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from deep_ei import topology_of, vector_ei_of_layer, vector_and_pairwise_ei
+from deep_ei import topology_of, vector_and_pairwise_ei
 
 def test_ei_0():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

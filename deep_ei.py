@@ -680,12 +680,12 @@ def _EI_of_layer_auto_samples(layer, topology, batch_size, in_layer, in_shape, i
         SAMPLES_SO_FAR += INTERVAL
     
     
-def ei_of_layer(layer, topology, threshold=0.05, samples=None, extrapolate=False, batch_size=20, 
+def ei_parts(layer, topology, threshold=0.05, samples=None, extrapolate=False, batch_size=20, 
     in_layer=None, in_range=None, in_bins=64, \
     out_range=None, out_bins=64, 
     activation=None, device='cpu'):
-    r"""Computes the effective information of neural network layer ``layer``. By a "layer",
-    really mean the edges connecting two layers of neurons in the network. The cumulative
+    r"""Computes `EI_parts` of neural network layer ``layer``. By a "layer",
+    really mean the edges connecting two layers of neurons in the network. The EI_parts
     EI of these connections is defined:
 
     .. math::
@@ -784,11 +784,11 @@ def ei_of_layer(layer, topology, threshold=0.05, samples=None, extrapolate=False
                 threshold=threshold)
 
 
-def ei_of_layer_matrix(layer, topology, samples=None, batch_size=20, 
+def ei_parts_matrix(layer, topology, samples=None, batch_size=20, 
     in_layer=None, in_range=None, in_bins=64, \
     out_range=None, out_bins=64, 
     activation=None, device='cpu'):
-    r"""Computes the effective information of all ``A -> B`` connections of 
+    r"""Computes the EI of all ``A -> B`` connections of 
     neural network layer ``layer``.
 
     The EI of the connection ``A -> B`` is defined as:
@@ -956,7 +956,7 @@ def ei_of_layer_matrix(layer, topology, samples=None, batch_size=20,
     return eis
 
 
-def sensitivity_of_layer(layer, topology, samples=500, batch_size=20,
+def sensitivity(layer, topology, samples=500, batch_size=20,
         in_layer=None, in_range=None, in_bins=64, out_range=None, out_bins=64, activation=None, device='cpu'):
     r"""Computes the sensitivity of neural network layer `layer`.
 
@@ -1083,7 +1083,7 @@ def sensitivity_of_layer(layer, topology, samples=500, batch_size=20,
 
 
 
-def sensitivity_of_layer_matrix(layer, topology, samples=500, batch_size=20,
+def sensitivity_matrix(layer, topology, samples=500, batch_size=20,
         in_layer=None, in_range=None, in_bins=64, out_range=None, out_bins=64, activation=None, device='cpu'):
     r"""Computes the sensitivitites of each A -> B connection 
     of neural network layer `layer`.
@@ -1346,7 +1346,7 @@ def _vector_ei_of_layer_auto_samples(layer, topology, batch_size, in_layer, in_s
         SAMPLES_SO_FAR += INTERVAL
 
 
-def vector_ei_of_layer(layer, topology, threshold=0.05, samples=None, batch_size=20, 
+def ei(layer, topology, threshold=0.05, samples=None, batch_size=20, 
     in_layer=None, in_range=None, in_bins=64, \
     out_range=None, out_bins=64, 
     activation=None, device='cpu'):

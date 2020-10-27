@@ -38,15 +38,13 @@ conda env create --file environment.yml
 ```
 
 ## Experiments
-Experiments have been grouped into four directories:
+Code from the paper has been grouped into two directories:
 ```
 experiments/
-├── iris
-├── mnist
-├── other
-└── simple
+├── notebooks
+└── runs
 ```
-Where `simple` contains notebooks for generating the simple figures for `A -> B` and `A, B -> C` networks included in the paper. The `iris` and `mnist` folders contain the code and notebooks for running iris and mnist experiments and generating the corresponding figures, and `other` contains miscilaneous other experiments (like testing extrapolation, etc.). 
+Where `notebooks` contains notebooks for making the figures and `runs` contains the code and resulting data from the experiments. **Note that all these files use a version of deep-ei before 0.7.0. So to run any of them yourself, install version 0.6.4 from commit 7d37642649594d14bc02590dc4edb5a1f858f501**. Note also that you will have to change the path to the experiment data in many of these notebooks.
 
 
 ## Using `deep-ei`
@@ -56,28 +54,28 @@ Detailed documentation can be found at [readthedocs.io](https://deep-ei.readthed
 import torch
 import torch.nn as nn
 
-from deep_ei import topology_of, ei_of_layer
+from deep_ei import topology_of, ei, ei_parts, sensitivity
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 dtype = torch.float32
 torch.set_default_dtype(dtype)
 
-network = nn.Linear(10, 10, bias=False).to(device)
-top = topology_of(network, input=torch.zeros((1, 10)).to(device))
+network = nn.Linear(5, 5, bias=False).to(device)
+top = topology_of(network, input=torch.zeros((1, 5)).to(device))
 
-EI = ei_of_layer(network, top,
-                    threshold=0.05,
-                    batch_size=100, 
-                    in_range=(0, 1),
-                    in_bins=64,
-                    out_range=(0, 1),
-                    out_bins=64,
-                    activation=nn.Sigmoid(), 
-                    device=device)
+EI = ei(network, top,
+                samples=int(1e5),
+                batch_size=100, 
+                in_range=(0, 1),
+                in_bins=8,
+                out_range=(0, 1),
+                out_bins=8,
+                activation=nn.Sigmoid(), 
+                device=device)
 ```
-This will compute the EI of a `10 -> 10` dense layer using a sigmoid activation. By default, this function will increase the number of samples it uses until the EI levels off (characterized by whether it will change by more than threshold of its current value even if we doubled the number of samples).
+This will compute the EI of the ``5 -> 5`` dense layer ``network`` using a sigmoid activation and 100000 samples. 
 
-The function `topology_of` creates a `networkx` graph representing the connectivity of the network. `ei_of_layer` can infer argument values using this graph, such as the ranges of the inputs and outputs of the layer and its activation function:
+The function ``topology_of`` creates a ``networkx`` graph representing the connectivity of the network. ``ei`` can infer argument values using this graph, such as the ranges of the inputs and outputs of the layer and its activation function:
 ```python
 network = nn.Sequential(
     nn.Linear(20, 10, bias=False),
@@ -89,29 +87,49 @@ top = topology_of(network, input=torch.zeros((1, 20)).to(device))
 
 layer1, _, layer2, _ = network
 
-EI_layer1 = ei_of_layer(layer1, top,
-                    threshold=0.05,
+EI_layer1 = ei(layer1, top,
+                    samples=int(1e5),
                     batch_size=100, 
                     in_range=(0, 1),
-                    in_bins=64,
-                    out_bins=64, 
+                    in_bins=8,
+                    out_bins=8, 
                     device=device)
 
-EI_layer2 = ei_of_layer(layer2, top,
-                    threshold=0.05,
+EI_layer2 = ei(layer2, top,
+                    samples=int(1e5),
                     batch_size=100, 
-                    in_bins=64,
-                    out_bins=64, 
+                    in_bins=8,
+                    out_bins=8, 
                     device=device)
 ```
 Which will use an activation of `nn.Sigmoid` and an `out_range` of `(0, 1)` for the first layer and an activation of `nn.Tanh` and an `out_range` of `(-1, 1)` for the second layer. Note that we have to specify an `in_range` for the first layer.
 
-Instead of specifying a `threshold`, you can instead manually specify a number of samples to use when computing effective information:
+EI_parts can be computed similarly:
+```python
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+dtype = torch.float32
+torch.set_default_dtype(dtype)
+
+network = nn.Linear(5, 5, bias=False).to(device)
+top = topology_of(network, input=torch.zeros((1, 5)).to(device))
+
+EI_parts = ei_parts(network, top,
+                    samples=int(1e5),
+                    batch_size=100, 
+                    in_range=(0, 1),
+                    in_bins=8,
+                    out_range=(0, 1),
+                    out_bins=8,
+                    activation=nn.Sigmoid(), 
+                    device=device)
+```
+
+With ``ei_parts``, you can specify a ``threshold`` instead of setting a manual number of ``samples`` (indeed this is the default behavior of ``ei_parts``, with default threshold of 0.05). The function will increase the number of samples it uses until EI_parts levels off (characterized by whether EI_parts will change by less than ``threshold`` of its current value even if we doubled the number of samples):
 ```python
 network = nn.Linear(10, 10, bias=False).to(device)
 top = topology_of(network, input=torch.zeros((1, 10)).to(device))
 
-EI = ei_of_layer(network, top,
+EI = ei_parts(network, top,
                     samles=50000,
                     batch_size=100, 
                     in_range=(0, 1),
@@ -121,14 +139,14 @@ EI = ei_of_layer(network, top,
                     activation=nn.Sigmoid(), 
                     device=device)
 ```
-Sometimes, EI takes millions of samples to converge, so be careful of specifying a value too low. 
+
 
 You can also measure the sensitivity of a layer like so:
 ```python
 network = nn.Linear(10, 10, bias=False).to(device)
 top = topology_of(network, input=torch.zeros((1, 10)).to(device))
 
-sensitivity = sensitivity_of_layer(network, top,
+sensitivity = sensitivity(network, top,
                             samples=1000,
                             batch_size=100, 
                             in_range=(0, 1),
@@ -139,12 +157,12 @@ sensitivity = sensitivity_of_layer(network, top,
                             device=device)
 ```
 
-If you want to compute the EI of each edge in a layer, use the `ei_of_layer_matrix` function:
+If you want to compute the EI of each edge in a layer (giving you each term that is summed to get EI_parts), use the `ei_parts_matrix` function:
 ```python
 network = nn.Linear(20, 10, bias=False).to(device)
 top = topology_of(network, input=torch.zeros((1, 20)).to(device))
 
-EI = ei_of_layer_matrix(network, top,
+EI = ei_parts_matrix(network, top,
                     samles=50000,
                     batch_size=100, 
                     in_range=(0, 1),
