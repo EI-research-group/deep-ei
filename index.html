@@ -66,15 +66,15 @@
 <div class="content">
     <!-- <div class="container"> -->
     <h1>Examining the causal structures of artificial neural networks using information theory: Videos</h1>
-    <p>This post accompanies the paper <a href="https://insert_arxiv_link">Examining the causal structures of artificial neural networks</a> by Simon Mattsson, <a href="https://ericjmichaud.com">Eric J. Michaud</a>, and <a href="https://www.erikphoel.com/">Erik Hoel</a>. In the paper, we define the cumulative effective information ($EI$) between a layer $L_1$ and $L_2$ to be:
+    <p>This post accompanies the paper <a href="https://arxiv.org/abs/2010.13871">Examining the causal structures of artificial neural networks</a> by Simon Mattsson, <a href="https://ericjmichaud.com">Eric J. Michaud</a>, and <a href="https://www.erikphoel.com/">Erik Hoel</a>. In the paper, we define the Effective Information ($EI$) between a layer $L_1$ and $L_2$ to be:
 
-    $$ EI(L_1 \rightarrow L_2) = \sum_{(A \in L_1,B \in L_2)} I(t_A,t_B) \ | \ do(L_1=H^{\max}) $$
+    $$ EI(L_1 \rightarrow L_2) = I(L_1, L_2) \ | \ do(L_1 = H^{\max}). $$
 
-    Each term in this sum is a mutual information between the activation of neuron $A \in L_1$ and neuron $B \in L_2$ when $A$ and all the other neurons in $L_1$ are firing randomly. This measures the extent to which the activation of $A$ can influence the activation of $B$ despite the presence of maximum-entropy noise from all the other neurons which B's activation depends on. We can also define the cumulative sensitivity of the connections:
+    This is a mutual information between the vector of activations output by neurons in $L_1$ and the vector activations in $L_2$, where the neurons in $L_1$ take values independently and uniformly in their activation output range. We can also define the $sensitivity$:
     
     $$ Sensitivity(L_1 \rightarrow L_2) = \sum_{(A \in L_1, B \in L_2)} I(t_A, t_B) \ | \ do(A=H^{\max})$$
 
-    Sensitivity measures the extent to which the activation of $A$ can influence the activation of $B$, without the presence of any noise from other neurons in $L_1$. When $sensitivity$ and $EI$ are measured with sufficiently small bins, $EI \leq sensitivity$ (the mutual information between $A \in L_1$ and $B \in L_2$ decreases when other neurons in $L_1$ are firing). We call the difference between $sensitivity$ and $EI$ the $degeneracy$ of the layer:
+    Sensitivity sums over mutual information between individual neurons in $A \in L_1$ and $B \in L_2$, where only $A$ fires (taking values uniformly in its output range), and with all other neurons in $L_1$ outputting 0. When $sensitivity$ and $EI$ are measured with sufficiently small bins, $EI \leq sensitivity$. We call the difference between $sensitivity$ and $EI$ the $degeneracy$ of the layer:
 
     $$ EI = sensitivity - degeneracy$$
 
@@ -82,46 +82,28 @@
 
     <p>Below, we show videos of how the layers of a neural network move and differentiate in the causal plane during training. For networks trained on MNIST, we observe that layers differentiate in the causal plane, and we conjecture that this differentiation reflects that the layers are assuming distinct roles in the structure of the network.</p>
 
-    <p>The videos below show movement in the causal plane for a variety of network topologies:</p>
+    <p>The videos below show movement in the causal plane as networks are trained on MNIST (with inputs reduced from 28x28 to 5x5, and with only digits 0-4 in the dataset) and Iris.</p>
 
-    <h2>100->30->10 on MNIST</h2>
+    <h2>25->6->6->6->5 on MNIST</h2>
     <video width="100%" controls>
-    <source src="https://ericjmichaud.com/downloads/ei-videos/mnist_100-30-10_plane_video.mp4" type="video/mp4">
+    <source src="assets/videos/mnist_25-6-6-6-5_plane_video.mp4" type="video/mp4">
     Your browser does not support the video tag.
     </video>
 
-    <h2>100 -> 30->30->30->10 on MNIST</h2>
+    <h2>4->5->5->3 on Iris</h2>
     <video width="100%" controls>
-    <source src="https://ericjmichaud.com/downloads/ei-videos/mnist_100-30-30-30-10_plane_video.mp4" type="video/mp4">
+    <source src="assets/videos/iris_4-5-5-3_plane_video.mp4" type="video/mp4">
     Your browser does not support the video tag.
     </video>
 
-    <h2>100->30->30->30->30->30->10 on MNIST</h2>
-    <video width="100%" controls>
-    <source src="https://ericjmichaud.com/downloads/ei-videos/mnist_100-30-30-30-30-30-10_plane_video.mp4" type="video/mp4">
-    Your browser does not support the video tag.
-    </video>
-
-    <p>Generally, the hidden layers move mostly vertically (keeping $EI$ approximately constant) during learning, while the first and last layers become more degenerate. In the hidden layers, we see a drift towards degeneracy right as the network begins to overfit. In our deepest network (100->30->30->30->30->30->10), we observe that the hidden layers buldge out from the $EI$ nullcline, with the earlier layers becoming more sensitive and the later hidden layers becoming more degenerate, however the hidden layers converge to the same region of the plane as the network begins to overfit, before drifting towards degeneracy. 
-
-    We see:
-    <ol>
-        <li>the most movement in the plane during periods when the loss is being reduced the fastest</li>
-        <li>transitions in behavior as the network begins to overfit</li>
-        <li>differentiation between the behavior of the first layer, the hidden layers, and the last layer</li>
-    </ol>
-
-    Furthermore, the behavior does not appear to merely reflect the shape of the layer. Conider the following network:</p>
-
-    <h2>100->30->20->30->10->30->10 on MNIST</h2>
-    <video width="100%" controls>
-    <source src="https://ericjmichaud.com/downloads/ei-videos/mnist_100-30-20-30-10-30-10_plane_video.mp4" type="video/mp4">
-    Your browser does not support the video tag.
-    </video>
-
-    <p>When we mix up the widths of the hidden layers, we see similar behavior as before. Despite layers 4 and 6 having the same shape (30->10), their behavior is very different. Layer 4 (a hidden layer) moves little (slightly vertically then slightly towards degeneracy during overfitting), whereas layer 6 moves significantly towards degeneracy early in training. Layers 2 and 3, despite having opposite shapes (30->20 vs 20->30), and starting in different places, move in about the same way. All hidden layers switch directions and to drift towards degeneracy right as overfitting starts. </p>
-
-    <p>It therefore seems that the behavior in the causal plane reflects something nontrivial about the each layer's role in the network, and about how the structure of the network changes as it switches from generalization to overfitting the data.</p> 
+    <p>Some observations:
+        <ol>
+            <li>In the hidden layers, we see a drift towards degeneracy right as the network begins to overfit.</li>
+            <li>The most movement in the plane occurs during periods when the loss is being reduced the fastest.</li>
+            <li>We see transitions in behavior as the network begins to overfit</li>
+            <li>We see differentiation between the behavior of the first layer, the hidden layers, and the last layer on MNIST</li>
+        </ol>
+    </p>
 
 </div>
 
