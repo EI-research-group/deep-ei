@@ -130,7 +130,7 @@ network = nn.Linear(10, 10, bias=False).to(device)
 top = topology_of(network, input=torch.zeros((1, 10)).to(device))
 
 EI = ei_parts(network, top,
-                    samles=50000,
+                    threshold=0.05,
                     batch_size=100, 
                     in_range=(0, 1),
                     in_bins=64,

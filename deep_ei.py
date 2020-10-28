@@ -689,7 +689,7 @@ def ei_parts(layer, topology, threshold=0.05, samples=None, extrapolate=False, b
     EI of these connections is defined:
 
     .. math::
-        EI(L_1 \rightarrow L_2) = \sum_{(A \in L_1,B \in L_2)} I(t_A,t_B) \ | \ do(L_1=H^{\max}) 
+        EI_{parts}(L_1 \rightarrow L_2) = \sum_{(A \in L_1,B \in L_2)} I(t_A,t_B) \ | \ do(L_1=H^{\max}) 
 
     Args:
         layer (nn.Module): a module in ``topology``
@@ -1355,7 +1355,7 @@ def ei(layer, topology, threshold=0.05, samples=None, batch_size=20,
     of layers in the network:
 
     .. math::
-        EI^{\text{int}}(L_1 \rightarrow L_2) = I(L_1; L_2) \ | \ do(L_1=H^{\max}) 
+        EI(L_1 \rightarrow L_2) = I(L_1; L_2) \ | \ do(L_1=H^{\max}) 
 
     Args:
         layer (nn.Module): a module in ``topology``
@@ -1443,12 +1443,7 @@ def eis_between_groups(layer, topology, groups, samples=None, batch_size=20,
     in_layer=None, in_range=None, in_bins=64, \
     out_range=None, out_bins=64, 
     activation=None, device='cpu'):
-    r"""Computes the vector effective information of neural network layer ``layer``. 
-    By a "layer", we mean the function defined by the composition of some specified sequence
-    of layers in the network:
-
-    .. math::
-        EI^{\text{int}}(L_1 \rightarrow L_2) = I(L_1; L_2) \ | \ do(L_1=H^{\max}) 
+    r"""Computes the EI between subsets of nodes specified with `groups`. 
 
     Args:
         layer (nn.Module): a module in ``topology``
