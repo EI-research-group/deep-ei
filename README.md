@@ -9,7 +9,8 @@
     <a href="https://travis-ci.com/EI-research-group/deep-ei"><img src="https://travis-ci.com/EI-research-group/deep-ei.svg?token=XQEp1pndaPyr6Dp2sp6i&branch=master"></a>
     <a href="https://neuralnet.science"><img src="https://img.shields.io/badge/-SCIENCE!-blueviolet"></a>
     <!-- <img src="http://hits.dwyl.com/EI-research-group/deep-ei.svg"> -->
-    <p>This code accompanies the paper <b>"Examining the Causal Structures of Artificial Neural Networks Using Information Theory"</b> by Simon Mattsson, <a href="https://ericjmichaud.com">Eric J. Michaud</a>, and <a href="https://www.erikphoel.com/">Erik Hoel</a></p>
+    <p>This code accompanies the paper <b><a href="https://arxiv.org/abs/2010.13871">Examining the Causal Structures of Artificial Neural Networks Using Information Theory</a></b> by Simon Mattsson, <a href="https://ericjmichaud.com">Eric J. Michaud</a>, and <a href="https://www.erikphoel.com/">Erik Hoel</a></p>
+    <p><b>Project videos can be found <a href="https://ei-research-group.github.io/deep-ei/">_here_</a></b></p>
 </div>
 
 ## What's here?
